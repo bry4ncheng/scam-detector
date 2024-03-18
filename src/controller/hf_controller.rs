@@ -3,6 +3,7 @@ use axum::{Extension, Json, Router};
 use std::sync::Arc;
 use axum::extract::State;
 use axum_extra::extract::WithRejection;
+use axum_macros::debug_handler;
 use serde::{Deserialize, Serialize};
 use validator::Validate;
 use crate::domain::models::BotDistriktWebhookResponse;
@@ -20,18 +21,19 @@ pub fn router() -> Router<ServiceRegistry> {
         .route_layer(Extension(health_service))
 }
 
-#[derive(Serialize, Deserialize, Validate)]
+#[derive(Clone, Serialize, Deserialize, Validate)]
 pub struct Body {
     pub msg: String
 }
-/// Misc endpoint for individual use case
+
+
 async fn get_scam(
     State(hf_service): State<HuggingFaceService>,
     WithRejection(Json(body), _): WithRejection<Json<Body>, AppError>,
-) -> AppResult<BotDistriktWebhookResponse> {
+) -> AppResult<Json<BotDistriktWebhookResponse>> {
     let res = hf_service.get_phishing_scam(
         body.msg
-    ).await;
+    ).await?;
 
-    res
+    Ok(Json(res))
 }
