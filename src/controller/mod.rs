@@ -1,2 +1,2 @@
 pub mod health;
-mod hf_controller;
+pub mod hf_controller;

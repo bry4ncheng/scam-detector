@@ -1,7 +1,5 @@
 use crate::config::Config;
-use crate::controller::{
-    health
-};
+use crate::controller::{health, hf_controller};
 use anyhow::Context;
 use axum::http::header::{ACCEPT, AUTHORIZATION, CONTENT_TYPE, COOKIE};
 use axum::http::{HeaderValue, Method};
@@ -56,4 +54,5 @@ pub async fn serve(config: Arc<Config>) -> anyhow::Result<()> {
 
 pub fn endpoint_router() -> Router<ServiceRegistry> {
     health::router()
+        .nest("/api", hf_controller::router())
 }

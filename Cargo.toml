@@ -1,5 +1,5 @@
 [package]
-name = "scam-detector"
+name = "scam-dectector"
 version = "0.1.0"
 edition = "2021"
 

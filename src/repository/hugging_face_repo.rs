@@ -1,4 +1,5 @@
 use anyhow::anyhow;
+use http::header::AUTHORIZATION;
 use http::HeaderValue;
 use http::HeaderMap;
 use reqwest::{Body, Client, Error, Response};
@@ -28,7 +29,7 @@ impl HuggingFaceRepository {
     }
     pub async fn use_phishbot(self, msg: String) -> AppResult<Vec<ScamLLM>> {
         let mut headers = HeaderMap::new();
-        headers.insert("Authorization", HeaderValue::from_str(&format!("Bearer {:?}", self.token.clone())).unwrap());
+        headers.insert(AUTHORIZATION, format!("Bearer {}", self.token.clone()).parse().unwrap());
 
         let body = ScamBody {
             inputs: msg,
@@ -46,50 +47,23 @@ impl HuggingFaceRepository {
             Ok(res) => {
                 res
             }
-            Err(_e) => {
+            Err(e) => {
+                error!("Something went wrong with ScamLLM API call: {}", e);
                 return Err(AppError::InternalServerError);
             }
         };
 
-        let result = response.json::<Vec<Vec<ScamLLM>>>().await;
-
+        let result = response.json::<serde_json::Value>().await;
         match result {
             Ok(res) => {
+                let res = serde_json::from_value::<Vec<Vec<ScamLLM>>>(res).unwrap();
                 Ok(res[0].clone())
             }
             Err(e) => {
-                error!("Something went wrong with ScamLLM API call");
+                error!("Something went wrong with ScamLLM API call: {}", e);
                 Err(InternalServerErrorWithMessage("Something went wrong with ScamLLM API call".to_string()))
             }
         }
     }
 
-    // pub async fn use_gemma(self, msg: String) -> AppResult<Vec<ScamLLM>> {
-    //     let mut headers = HeaderMap::new();
-    //     headers.insert("Authorization", format!("Bearer {}", self.token.clone()));
-    //
-    //     let json = json!({
-    //         "inputs": msg
-    //     });
-    //     let body = Body::from(json);
-    //
-    //
-    //     let response = self.http_client
-    //         .post("https://api-inference.huggingface.co/models/phishbot/ScamLLM")
-    //         .headers(headers)
-    //         .body(body)
-    //         .send()
-    //         .await?;
-    //     let result = response.json::<Vec<Vec<ScamLLM>>>().await;
-    //
-    //     match result {
-    //         Ok(res) => {
-    //             Ok(res[0].clone())
-    //         }
-    //         Err(e) => {
-    //             error!("Something went wrong with ScamLLM API call");
-    //             Err(InternalServerErrorWithMessage("Something went wrong with ScamLLM API call".to_string()))
-    //         }
-    //     }
-    // }
 }

@@ -1,16 +1,12 @@
-use axum::Json;
-use axum::response::{IntoResponse, Response};
-use http::StatusCode;
 use serde::{Deserialize, Serialize};
-use serde_json::json;
 
-#[derive(Clone ,Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct BotDistriktWebhookResponse {
     pub responses: Vec<String>,
 }
 
-#[derive(Clone ,Serialize, Deserialize)]
+#[derive(Clone, Serialize, Deserialize, Debug)]
 pub struct ScamLLM {
     pub label: String,
-    pub score: f64
+    pub score: f64,
 }
