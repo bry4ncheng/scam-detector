@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct BotDistriktWebhookResponse {
+    pub confidence: String,
     pub responses: Vec<String>,
 }
 

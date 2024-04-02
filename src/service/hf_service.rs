@@ -4,6 +4,7 @@ use crate::domain::models::BotDistriktWebhookResponse;
 use crate::error::AppResult;
 use crate::repository::hugging_face_repo::HuggingFaceRepository;
 use crate::service::service_registry::ServiceRegistry;
+use crate::utils::process::process_scam;
 
 #[derive(Clone)]
 pub struct HuggingFaceService {
@@ -23,34 +24,36 @@ impl HuggingFaceService {
     }
 
     pub async fn get_phishing_scam(self, msg: String) -> AppResult<BotDistriktWebhookResponse> {
-        let res = self
+
+        let res_phish = self.clone()
             .hugging_face_repository
-            .use_phishbot(msg)
+            .use_phishbot(msg.clone())
             .await?;
-        info!("LLM result: {:?}", res);
-        let mut label_0 = 0.0;
-        let mut label_1 = 0.0;
-        //Confidence of no scam
-        for label in res {
-            if label.label == "LABEL_1" {
-                label_1 = label.score
-            } else {
-                label_0 = label.score
-            }
-        }
+
+        let res_dc = self.clone()
+            .hugging_face_repository
+            .use_dc_scam_detector(msg.clone())
+            .await?;
+        let res_bert = self
+            .hugging_face_repository
+            .use_bert(msg)
+            .await?;
+
+        let vec = vec![res_phish, res_dc, res_bert];
+        let (is_scam, confidence) = process_scam(vec);
         //Confidence of scam
-        //TODO: Check if correct logic
-        ///Ill keep label 1 in in case yall wanna change the response
-        if label_0 > 0.5  {
+        if is_scam {
             Ok(BotDistriktWebhookResponse {
+                confidence,
                 responses: vec![
-                    "This is unlikely a scam!".to_string()
+                    "This is probably a scam! Please do not click on any links or reply to any messages.".to_string()
                 ],
             })
         } else {
             Ok(BotDistriktWebhookResponse {
+                confidence,
                 responses: vec![
-                    "This is probably a scam! Please do not click on any links or reply to any messages.".to_string()
+                    "This is unlikely a scam!".to_string()
                 ],
             })
         }
